@@ -343,13 +343,25 @@ function () {
     /**
      * Performs decryption.
      *
-     * @param cipherText  String
+     * @param cipherText    String
      * @return Promise<String>
      */
 
   }, {
     key: "decrypt",
     value: function decrypt(cipherText) {
+      return this.decryptBinary(cipherText).then(_jose_utils__WEBPACK_IMPORTED_MODULE_0__["utf8StringFromArray"]);
+    }
+    /**
+     * Performs decryption.
+     *
+     * @param cipherText    String
+     * @return Promise<ArrayBuffer>
+     */
+
+  }, {
+    key: "decryptBinary",
+    value: function decryptBinary(cipherText) {
       // Split cipherText in 5 parts
       var parts = cipherText.split('.');
 
@@ -395,7 +407,7 @@ function () {
 
 
       var plainTextPromise = this.cryptographer.decrypt(cekPromise, _jose_utils__WEBPACK_IMPORTED_MODULE_0__["arrayFromString"](parts[0]), this.base64UrlEncoder.decodeArray(parts[2]), this.base64UrlEncoder.decodeArray(parts[3]), this.base64UrlEncoder.decodeArray(parts[4]));
-      return plainTextPromise.then(_jose_utils__WEBPACK_IMPORTED_MODULE_0__["utf8StringFromArray"]);
+      return plainTextPromise;
     }
   }]);
 
@@ -477,21 +489,33 @@ function () {
     /**
      * Performs encryption.
      *
-     * @param plainText  utf-8 string
+     * @param plainText   utf-8 string
      * @return Promise<String>
      */
 
   }, {
     key: "encrypt",
     value: function encrypt(plainText) {
+      return this.encryptBinary(_jose_utils__WEBPACK_IMPORTED_MODULE_0__["arrayFromUtf8String"](plainText));
+    }
+    /**
+     * Performs encryption.
+     *
+     * @param plainTextArray   array, ArrayBuffer or Uint8Array
+     * @return Promise<String>
+     */
+
+  }, {
+    key: "encryptBinary",
+    value: function encryptBinary(plainTextArray) {
       /**
        * Encrypts plainText with CEK.
        *
-       * @param cekPromise  Promise<CryptoKey>
-       * @param plainText   string
+       * @param cekPromise        Promise<CryptoKey>
+       * @param plainTextArray    array, ArrayBuffer or Uint8Array
        * @return Promise<json>
        */
-      var encryptPlainText = function encryptPlainText(cekPromise, plainText) {
+      var encryptPlainText = function encryptPlainText(cekPromise, plainTextArray) {
         // Create header
         var headers = {};
 
@@ -506,8 +530,8 @@ function () {
         var iv = this.cryptographer.createIV(); // Create the AAD
 
         var aad = _jose_utils__WEBPACK_IMPORTED_MODULE_0__["arrayFromString"](jweProtectedHeader);
-        plainText = _jose_utils__WEBPACK_IMPORTED_MODULE_0__["arrayFromUtf8String"](plainText);
-        return this.cryptographer.encrypt(iv, aad, cekPromise, plainText).then(function (r) {
+        plainTextArray = _jose_utils__WEBPACK_IMPORTED_MODULE_0__["arrayish"](plainTextArray);
+        return this.cryptographer.encrypt(iv, aad, cekPromise, plainTextArray).then(function (r) {
           r.header = jweProtectedHeader;
           r.iv = iv;
           return r;
@@ -533,7 +557,7 @@ function () {
       } // Cek allows us to encrypy the plain text
 
 
-      var encPromise = encryptPlainText.bind(this, cekPromise, plainText)(); // Once we have all the promises, we can base64 encode all the pieces.
+      var encPromise = encryptPlainText.bind(this, cekPromise, plainTextArray)(); // Once we have all the promises, we can base64 encode all the pieces.
 
       return Promise.all([encryptedCek, encPromise]).then(function (all) {
         var encryptedCek = all[0];
@@ -2513,8 +2537,9 @@ function toByteArray(b64) {
   var curByte = 0; // if there are placeholders, only get up to the last complete 4 chars
 
   var len = placeHoldersLen > 0 ? validLen - 4 : validLen;
+  var i;
 
-  for (var i = 0; i < len; i += 4) {
+  for (i = 0; i < len; i += 4) {
     tmp = revLookup[b64.charCodeAt(i)] << 18 | revLookup[b64.charCodeAt(i + 1)] << 12 | revLookup[b64.charCodeAt(i + 2)] << 6 | revLookup[b64.charCodeAt(i + 3)];
     arr[curByte++] = tmp >> 16 & 0xFF;
     arr[curByte++] = tmp >> 8 & 0xFF;

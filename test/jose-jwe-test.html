@@ -141,6 +141,40 @@
       });
       assert.willEqual(decrypted_plain_text_promise, plain_text, "got expected decrypted plain text");
 
+      // Repeat with an array instead of a string
+      var plain_text_array = Jose.Utils.arrayish(Jose.Utils.arrayFromUtf8String(plain_text));
+      var cipher_text_array_promise = encrypter.encryptBinary(plain_text_array);
+
+      assert.willEqual(cipher_text_array_promise.then(function(result){return result.split('.').length}),
+        5, "got right number of components");
+
+      assert.willEqual(cipher_text_array_promise.then(function(result){return result.split('.')[0]}),
+        "eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0",
+        "got expected header");
+
+      assert.willEqual(cipher_text_array_promise.then(function(result){return result.split('.')[1]}),
+        "6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ",
+        "got expected encrypted key");
+
+      assert.willEqual(cipher_text_array_promise.then(function(result){return result.split('.')[2]}),
+        "AxY8DCtDaGlsbGljb3RoZQ",
+        "got expected IV");
+
+      assert.willEqual(cipher_text_array_promise.then(function(result){return result.split('.')[3]}),
+        "KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY",
+        "got expected cipher text");
+
+      assert.willEqual(cipher_text_array_promise.then(function(result){return result.split('.')[4]}),
+        "U0m_YmjN04DJvceFICbCVQ",
+        "got expected tag");
+
+      decrypter = new Jose.JoseJWE.Decrypter(cryptographer, shared_key);
+      decrypted_plain_text_promise = cipher_text_promise.then(function(cipher_text){
+        return decrypter.decryptBinary(cipher_text);
+      });
+      assert.willEqual(decrypted_plain_text_promise.then(function(result){return new Jose.Utils.Base64Url().encodeArray(result)}), new Jose.Utils.Base64Url().encodeArray(plain_text_array), "got expected decrypted plain text");
+
+
       // Modify string and check for invalid tag
       var mac_failure = cipher_text_promise.then(function(cipher_text) {
         cipher_text = cipher_text.split('.');
